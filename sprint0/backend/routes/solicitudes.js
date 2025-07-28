@@ -111,5 +111,8 @@ router.get('/solicitudes/:estado', solicitudesController.getSolicitudesPorEstado
  *         description: Error interno
  */
 router.put('/solicitudes/:id', solicitudesController.actualizarEstadoSolicitud);
+router.get('/solicitudes/:id/participantes', solicitudesController.obtenerParticipantes);
+router.put('/solicitudes/:id/estado', solicitudesController.actualizarEstadoSolicitud);
+
 
 module.exports = router;

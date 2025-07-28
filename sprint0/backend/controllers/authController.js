@@ -1,18 +1,9 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const pool = require('../db/connection');
+const { Usuario } = require('../models');
 
 exports.registro = async (req, res) => {
-  const {
-    usuario,
-    nombre,
-    apellido,
-    ci_pasaporte,
-    nacionalidad,
-    correo,
-    contacto,
-    contrasena
-  } = req.body;
+  const { usuario, nombre, apellido, ci_pasaporte, nacionalidad, correo, contacto, contrasena } = req.body;
 
   if (!usuario || !nombre || !apellido || !ci_pasaporte || !nacionalidad || !correo || !contacto || !contrasena) {
     return res.status(400).send("Todos los campos son obligatorios");
@@ -20,12 +11,18 @@ exports.registro = async (req, res) => {
 
   try {
     const hashedPass = await bcrypt.hash(contrasena, 10);
-    const rol = 'visitante'; // se asigna automáticamente
 
-    await pool.query(
-      "INSERT INTO usuarios(usuario, nombre, apellido, ci_pasaporte, nacionalidad, correo, contacto, contrasena, rol) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
-      [usuario, nombre, apellido, ci_pasaporte, nacionalidad, correo, contacto, hashedPass, rol]
-    );
+    await Usuario.create({
+      usuario,
+      nombre,
+      apellido,
+      ci_pasaporte,
+      nacionalidad,
+      correo,
+      contacto,
+      contrasena: hashedPass,
+      rol: 'visitante'
+    });
 
     res.status(201).send("Registrado correctamente como visitante");
   } catch (err) {
@@ -38,14 +35,14 @@ exports.login = async (req, res) => {
   const { usuario, contrasena } = req.body;
 
   try {
-    const result = await pool.query("SELECT * FROM usuarios WHERE usuario = $1", [usuario]);
-    if (result.rows.length === 0) return res.status(401).send("Usuario no encontrado");
+    const user = await Usuario.findOne({ where: { usuario } });
+    if (!user) return res.status(401).send("Usuario no encontrado");
 
-    const user = result.rows[0];
     const valido = await bcrypt.compare(contrasena, user.contrasena);
     if (!valido) return res.status(403).send("Contraseña incorrecta");
 
     const token = jwt.sign({ id: user.id, rol: user.rol }, "secreto", { expiresIn: "1h" });
+
     res.json({
       token,
       rol: user.rol,

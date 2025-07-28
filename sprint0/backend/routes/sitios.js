@@ -208,6 +208,6 @@ router.put('/sitios/:id', authMiddleware, sitioController.actualizarSitio);
  *         description: Error interno del servidor
  */
 router.get('/sitios/:id', authMiddleware, sitioController.getSitioPorId);
-
+router.post('/sitios/:id/imagenes', sitioController.subirImagenes);
 
 module.exports = router;

@@ -1,95 +1,120 @@
-const pool = require("../db/connection");
+const { Sitio } = require("../models");
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
-// GET sitios asignados al guardaparque fijo (ID = 1)
+// GET sitios asignados al guardaparque ID 2
 exports.getSitiosAsignados = async (req, res) => {
   try {
-    const result = await pool.query(
-      "SELECT * FROM sitios_turisticos WHERE id_guardaparque = 2"
-    );
-    res.json(result.rows);
+    const sitios = await Sitio.findAll({ where: { id_guardaparque: 2 } });
+    res.json(sitios);
   } catch (error) {
     console.error("Error al obtener sitios asignados:", error);
     res.status(500).json({ message: "Error al obtener sitios asignados" });
   }
 };
 
-// PUT actualizar sitio (solo campos, sin cambiar id_guardaparque)
+// PUT actualizar un sitio turístico
 exports.actualizarSitio = async (req, res) => {
-  const { id } = req.params;
+  const id = req.params.id;
   const { nombre, descripcion, aforo_maximo, estado } = req.body;
 
   try {
-    const sitio = await pool.query(
-      "SELECT * FROM sitios_turisticos WHERE id = $1 AND id_guardaparque = 2",
-      [id]
-    );
+    const sitio = await Sitio.findByPk(id);
+    if (!sitio) return res.status(404).json({ message: "Sitio no encontrado" });
 
-    if (sitio.rowCount === 0) {
-      return res.status(403).json({ message: "No autorizado para este sitio" });
-    }
+    await sitio.update({
+      nombre: nombre || sitio.nombre,
+      descripcion: descripcion || sitio.descripcion,
+      aforo_maximo: aforo_maximo ?? sitio.aforo_maximo,
+      estado: estado || sitio.estado
+    });
 
-    await pool.query(
-      "UPDATE sitios_turisticos SET nombre=$1, descripcion=$2, aforo_maximo=$3, estado=$4 WHERE id=$5",
-      [nombre, descripcion, aforo_maximo, estado, id]
-    );
-
-    res.json({ message: "Sitio actualizado correctamente" });
+    res.status(200).json({ message: "Sitio actualizado correctamente" });
   } catch (error) {
     console.error("Error al actualizar sitio:", error);
-    res.status(500).json({ message: "Error al actualizar sitio" });
+    res.status(500).json({ message: "Error interno al actualizar sitio" });
   }
 };
 
-// GET listado público de todos los sitios
+// GET todos los sitios (público)
 exports.getTodosLosSitios = async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM sitios_turisticos");
-    res.json(result.rows);
+    const sitios = await Sitio.findAll();
+    res.json(sitios);
   } catch (error) {
     console.error("Error al obtener sitios:", error);
     res.status(500).json({ message: "Error al obtener sitios" });
   }
 };
 
-// GET disponibilidad de un sitio en una fecha (ejemplo básico)
+// GET disponibilidad por fecha (simulada)
 exports.getDisponibilidad = async (req, res) => {
-  const { id, fecha } = req.params;
-
+  const { id } = req.params;
   try {
-    // Este ejemplo asume que hay una tabla de reservas (no incluida en tu modelo)
-    // De momento simplemente retorna el aforo del sitio
-    const result = await pool.query("SELECT aforo_maximo FROM sitios_turisticos WHERE id = $1", [id]);
+    const sitio = await Sitio.findByPk(id);
+    if (!sitio) return res.status(404).json({ message: "Sitio no encontrado" });
 
-    if (result.rowCount === 0) {
-      return res.status(404).json({ message: "Sitio no encontrado" });
-    }
-
-    // Supongamos no hay reservas: aforo completo disponible
-    res.json({ disponible: result.rows[0].aforo_maximo });
+    res.json({ disponible: sitio.aforo_maximo });
   } catch (error) {
     console.error("Error al consultar disponibilidad:", error);
     res.status(500).json({ message: "Error al consultar disponibilidad" });
   }
 };
 
-// GET un sitio por su ID (solo si pertenece al guardaparque ID 2)
+// GET un sitio por ID y validación de guardaparque
 exports.getSitioPorId = async (req, res) => {
-    const { id } = req.params;
-  
+  const { id } = req.params;
+
+  try {
+    const sitio = await Sitio.findOne({
+      where: { id, id_guardaparque: 2 }
+    });
+
+    if (!sitio) return res.status(404).json({ message: "Sitio no encontrado o no autorizado" });
+    res.json(sitio);
+  } catch (error) {
+    console.error("Error al obtener sitio:", error);
+    res.status(500).json({ message: "Error al obtener sitio" });
+  }
+};
+
+// ====================
+// Cargar imágenes con multer
+// ====================
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const dir = path.join(__dirname, '../public/uploads');
+    fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: function (req, file, cb) {
+    const ext = path.extname(file.originalname);
+    const filename = `${Date.now()}-${Math.round(Math.random() * 1E6)}${ext}`;
+    cb(null, filename);
+  }
+});
+const upload = multer({ storage });
+
+exports.subirImagenes = [
+  upload.array('imagenes', 5),
+  async (req, res) => {
+    const sitioId = req.params.id;
+    const rutas = req.files.map(file => `/uploads/${file.filename}`);
+
     try {
-      const result = await pool.query(
-        "SELECT * FROM sitios_turisticos WHERE id = $1 AND id_guardaparque = 2",
-        [id]
-      );
-  
-      if (result.rowCount === 0) {
-        return res.status(404).json({ message: "Sitio no encontrado o no autorizado" });
-      }
-  
-      res.json(result.rows[0]);
+      const sitio = await Sitio.findByPk(sitioId);
+      if (!sitio) return res.status(404).json({ message: "Sitio no encontrado" });
+
+      const imagenesPrevias = sitio.imagenes || [];
+      const nuevasImagenes = [...imagenesPrevias, ...rutas];
+
+      await sitio.update({ imagenes: nuevasImagenes });
+
+      res.status(200).json({ message: "Imágenes subidas correctamente", rutas });
     } catch (error) {
-      console.error("Error al obtener sitio:", error);
-      res.status(500).json({ message: "Error al obtener sitio" });
+      console.error("Error al guardar imágenes:", error);
+      res.status(500).json({ error: "Error al guardar imágenes" });
     }
-  };
-  
+  }
+];

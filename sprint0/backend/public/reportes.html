@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Reporte de Solicitudes - Reserva Ecológica Los Ilinizas</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/custom.css">
+</head>
+<body class="bg-gray-100 d-flex flex-column min-vh-100">
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg bg-green-900 navbar-dark shadow">
+    <div class="container-fluid justify-content-between">
+      <a class="navbar-brand fw-bold" href="index.html">🌿 Reserva Ecológica Los Ilinizas</a>
+      <a href="index.html" class="btn btn-outline-light">🏠 Inicio</a>
+    </div>
+  </nav>
+
+  <!-- Contenido principal -->
+  <main class="container my-5 bg-white p-4 rounded shadow-lg admin-style" style="max-width: 1000px;">
+    <h4 class="text-success fw-bold mb-4 text-center">Reporte de Solicitudes Aceptadas</h4>
+
+    <div class="mb-4 d-flex flex-wrap gap-3 justify-content-center">
+      <button id="btnDia" class="btn btn-verde">Reportes diarios</button>
+      <button id="btnMes" class="btn btn-verde">Reportes mensuales</button>
+      <button id="btnFiltro" class="btn btn-verde">Reportes por filtro</button>
+    </div>
+
+    <!-- Tabla de solicitudes -->
+    <h5 class="fw-bold text-success">Solicitudes Registradas</h5>
+    <table class="table table-bordered">
+      <thead class="table-success">
+        <tr>
+          <th>Nombre del Líder</th>
+          <th>Fecha de Ingreso</th>
+          <th>Hora de Ingreso</th>
+          <th>Estado</th>
+          <th>Ingreso</th>
+        </tr>
+      </thead>
+      <tbody id="tablaSolicitudes">
+        <!-- Datos dinámicos desde el backend -->
+        <tr>
+          <td>Ana Martínez</td>
+          <td>2025-05-21</td>
+          <td>09:15 AM</td>
+          <td>Aceptada</td>
+          <td>Ingresado</td>
+        </tr>
+        <tr>
+          <td>Luisa Sánchez</td>
+          <td>2025-05-21</td>
+          <td>08:30 AM</td>
+          <td>Aceptada</td>
+          <td>No ingresado</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Resumen -->
+    <h5 class="fw-bold text-success mt-4">Resumen de Ingresos</h5>
+    <table class="table table-bordered">
+      <thead class="table-success">
+        <tr>
+          <th>Total Visitantes</th>
+          <th>Ingresaron</th>
+          <th>No Ingresaron</th>
+          <th>Porcentaje de Ingreso</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>4</td>
+          <td>1</td>
+          <td>1</td>
+          <td>50%</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Info general -->
+    <h5 class="fw-bold text-success mt-4">Información General</h5>
+    <table class="table table-bordered">
+      <thead class="table-success">
+        <tr>
+          <th>Información</th>
+          <th>Detalles</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Ubicación</td>
+          <td>Centro norte del territorio nacional, provincia de Pichincha</td>
+        </tr>
+        <tr>
+          <td>Apertura</td>
+          <td>08:00 AM - 06:00 PM</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <button id="btnPDF" class="btn btn-verde w-100 mt-4">Generar Reporte</button>
+  </main>
+
+  <!-- Footer -->
+  <footer class="text-center bg-green-900 text-white p-3 mt-auto">
+    &copy; 2025 Reserva Ecológica Los Ilinizas. Todos los derechos reservados.
+  </footer>
+
+  <!-- Script dinámico -->
+  <script type="module" src="scripts/reportes.js"></script>
+</body>
+</html>

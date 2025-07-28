@@ -1,11 +1,10 @@
-const pool = require('../db/connection');
+const { Solicitud, Participante, Usuario, Sitio } = require('../models');
+const { Op } = require('sequelize');
 
-// POST: Crear una nueva solicitud con participantes
 exports.crearSolicitud = async (req, res) => {
-  const { id_usuario, id_sitio, fecha_visita, participantes } = req.body;
+  const { id_usuario, id_sitio, fecha_visita, participantes, contacto_emergencia, tipo_visitante } = req.body;
 
   try {
-    // Validaciones:
     const total = participantes.length;
     const lideres = participantes.filter(p => p.es_lider).length;
     const menores = participantes.filter(p => p.edad < 18);
@@ -24,75 +23,85 @@ exports.crearSolicitud = async (req, res) => {
       });
     }
 
-    // Crear solicitud
-    const result = await pool.query(
-      `INSERT INTO solicitudes (id_usuario, id_sitio, fecha_visita, estado)
-       VALUES ($1, $2, $3, 'Pendiente') RETURNING id`,
-      [id_usuario, id_sitio, fecha_visita]
-    );
+    const nuevaSolicitud = await Solicitud.create({
+      id_usuario, id_sitio, fecha_visita, contacto_emergencia, tipo_visitante, estado: 'Pendiente'
+    });
 
-    const idSolicitud = result.rows[0].id;
+    const participantesConSolicitud = participantes.map(p => ({
+      ...p,
+      id_solicitud: nuevaSolicitud.id
+    }));
 
-    // Insertar participantes
-    for (const p of participantes) {
-      await pool.query(
-        `INSERT INTO participantes 
-          (id_solicitud, nombre, edad, ci_pasaporte, ciudad, es_lider, documento_consentimiento)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [
-          idSolicitud,
-          p.nombre,
-          p.edad,
-          p.ci_pasaporte,
-          p.ciudad,
-          p.es_lider || false,
-          p.documento_consentimiento || null
-        ]
-      );
-    }
+    await Participante.bulkCreate(participantesConSolicitud);
 
-    res.status(201).json({ message: "Solicitud creada correctamente", id: idSolicitud });
-
+    res.status(201).json({ message: "Solicitud creada correctamente", id: nuevaSolicitud.id });
   } catch (error) {
     console.error("Error al crear solicitud:", error);
     res.status(500).json({ message: "Error interno al registrar la solicitud" });
   }
 };
 
-// GET: Solicitudes por estado
 exports.getSolicitudesPorEstado = async (req, res) => {
   const { estado } = req.params;
   try {
-    const result = await pool.query(`
-      SELECT s.*, u.nombre AS nombre_usuario, st.nombre AS nombre_sitio
-      FROM solicitudes s
-      JOIN usuarios u ON s.id_usuario = u.id
-      JOIN sitios_turisticos st ON s.id_sitio = st.id
-      WHERE s.estado = $1
-    `, [estado]);
-    res.json(result.rows);
+    const solicitudes = await Solicitud.findAll({
+      where: { estado },
+      include: [
+        { model: Usuario, attributes: ['nombre', 'apellido'] },
+        { model: Sitio, attributes: ['nombre'] }
+      ]
+    });
+
+    // Transformar las solicitudes incluyendo nombre plano
+    const datosFormateados = solicitudes.map(s => {
+      const solicitud = s.toJSON();
+      return {
+        id: solicitud.id,
+        fecha_visita: solicitud.fecha_visita,
+        estado: solicitud.estado,
+        nombre_usuario: solicitud.Usuario
+          ? `${solicitud.Usuario.nombre} ${solicitud.Usuario.apellido}`
+          : "Desconocido",
+        nombre_sitio: solicitud.Sitio?.nombre || "Sitio"
+      };
+    });
+
+    res.json(datosFormateados);
   } catch (error) {
     console.error("Error al obtener solicitudes:", error);
     res.status(500).json({ message: "Error al consultar solicitudes" });
   }
 };
-
-
-// PUT: Actualizar estado de la solicitud (aceptar/rechazar)
-exports.actualizarEstadoSolicitud = async (req, res) => {
+exports.obtenerParticipantes = async (req, res) => {
   const { id } = req.params;
-  const { estado, comentario } = req.body;
 
   try {
-    await pool.query(`
-      UPDATE solicitudes 
-      SET estado = $1, comentario_guardaparque = $2
-      WHERE id = $3
-    `, [estado, comentario, id]);
-
-    res.json({ message: "Solicitud actualizada" });
+    const participantes = await Participante.findAll({
+      where: { id_solicitud: id }
+    });
+    res.status(200).json(participantes);
   } catch (error) {
-    console.error("Error al actualizar solicitud:", error);
-    res.status(500).json({ message: "Error al actualizar la solicitud" });
+    console.error("Error al obtener participantes:", error);
+    res.status(500).json({ message: "Error al obtener participantes" });
+  }
+};
+
+exports.actualizarEstadoSolicitud = async (req, res) => {
+  const { id } = req.params;
+  const { estado, comentario_guardaparque } = req.body;
+
+  if (!["Aceptada", "Rechazada"].includes(estado)) {
+    return res.status(400).json({ message: "Estado inválido" });
+  }
+
+  try {
+    const solicitud = await Solicitud.findByPk(id);
+    if (!solicitud) return res.status(404).json({ message: "Solicitud no encontrada" });
+
+    await solicitud.update({ estado, comentario_guardaparque: comentario_guardaparque || "" });
+    res.status(200).json({ message: "Solicitud actualizada correctamente" });
+  } catch (error) {
+    console.error("Error al actualizar estado de solicitud:", error);
+    res.status(500).json({ message: "Error interno" });
   }
 };

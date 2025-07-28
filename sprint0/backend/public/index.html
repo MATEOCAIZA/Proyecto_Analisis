@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inicio - Reserva Ecológica Los Ilinizas</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/custom.css" />
+</head>
+<body class="bg-gray-100 text-gray-900 d-flex flex-column min-vh-100">
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg bg-green-900 navbar-dark shadow">
+  <div class="container-fluid d-flex justify-content-between align-items-center">
+    <a class="navbar-brand fw-bold" href="#">🏞️ Reserva Ecológica Los Ilinizas</a>
+
+    <div class="d-flex gap-3 align-items-center">
+      <!-- Menú desplegable de usuario -->
+      <div class="dropdown d-none" id="userDropdown">
+        <button class="btn btn-outline-light dropdown-toggle" type="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="bi bi-person-circle me-2"></i><span id="userName">Usuario</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu" id="userOptions"></ul>
+      </div>
+
+      <!-- Botones visibles solo si NO hay sesión -->
+      <a id="btnLogin" class="btn btn-outline-light" href="login.html">Iniciar Sesión</a>
+      <a id="btnRegister" class="btn btn-outline-light" href="register.html">Registrarse</a>
+    </div>
+  </div>
+</nav>
+
+  <!-- Header con imagen de fondo -->
+  <header class="text-white text-center p-5 mb-4" style="
+    background-image: url('img/iliniza-header.jpg');
+    background-size: cover;
+    background-position: center;
+    background-blend-mode: multiply;
+    background-color: rgba(0, 0, 0, 0.5);
+  ">
+    <h1 class="display-4 fw-bold">Explora la Naturaleza</h1>
+    <p class="lead">Reserva visitas a los sitios más bellos y protegidos del país</p>
+  </header>
+
+  <!-- Sitios Turísticos -->
+  <section class="container my-5">
+    <div class="row g-4" id="sitiosContainer">
+      <!-- Cards de sitios cargadas desde JS -->
+    </div>
+  </section>
+
+  <!-- Footer fijo abajo -->
+  <footer class="text-center bg-green-900 text-white p-3 mt-auto">
+    &copy; 2025 Reserva Ecológica Los Ilinizas. Todos los derechos reservados.
+  </footer>
+
+  <script type="module" src="scripts/index.js"></script>
+</body>
+</html>
